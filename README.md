@@ -1,8 +1,8 @@
 # mdschema
 
-[![Test](https://github.com/jackchuka/mdschema/workflows/Test/badge.svg)](https://github.com/jackchuka/mdschema/actions)
-[![Go Report Card](https://goreportcard.com/badge/github.com/jackchuka/mdschema)](https://goreportcard.com/report/github.com/jackchuka/mdschema)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Test](https://github.com/jackchuka/mdschema/actions/workflows/test.yml/badge.svg)](https://github.com/jackchuka/mdschema/actions/workflows/test.yml)
+[![Release](https://img.shields.io/github/v/release/jackchuka/mdschema?sort=semver)](https://github.com/jackchuka/mdschema/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A declarative schema-based Markdown documentation validator that helps maintain consistent documentation structure across projects.
 
@@ -370,10 +370,58 @@ frontmatter:
     - { name: "draft", optional: true, type: boolean }
     - { name: "version", optional: true, type: number }
     - { name: "repo", optional: true, format: url }
+    - { name: "status", enum: [draft, published, archived] } # restrict to listed values
 ```
 
-**Field types:** `string`, `number`, `boolean`, `array`, `date`
+**Field types:** `string`, `number`, `boolean`, `array`, `date`, `object`
 **Field formats:** `date` (YYYY-MM-DD), `email`, `url`
+
+##### Enum Values
+
+Use `enum` to restrict a field to a fixed set of values. Declare `type: array`
+to check each element of a list instead of the list as a whole:
+
+```yaml
+frontmatter:
+  fields:
+    - { name: "status", enum: [draft, published, archived] }
+    - { name: "priority", type: number, enum: [1, 2, 3] }
+    - { name: "released", type: date, enum: [2024-01-01, 2024-07-01] }
+    - { name: "tags", type: array, enum: [go, cli, markdown] } # every element must be listed
+```
+
+Enum entries are compared against the declared `type` (or the type implied by
+`format`), so a mismatch such as `{ type: number, enum: [low, high] }` or
+`{ format: email, enum: [1, 2] }` — which no value could ever satisfy — is
+reported as a schema warning when the schema is loaded.
+
+##### Nested Frontmatter Keys
+
+Use dot-notation in `name` to validate nested keys:
+
+```yaml
+frontmatter:
+  fields:
+    - { name: "title" }
+    - { name: "metadata", type: object }
+    - { name: "metadata.author" }
+    - { name: "metadata.version" }
+    - { name: "metadata.homepage", optional: true, format: url }
+```
+
+Validates a document like:
+
+```yaml
+---
+title: My Document
+metadata:
+  author: example-org
+  version: "1.0"
+---
+```
+
+If a key segment contains a literal dot, escape it with a backslash:
+`name: "weird\\.key"`.
 
 ## Use Cases
 

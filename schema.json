@@ -51,9 +51,10 @@
         "number",
         "boolean",
         "array",
-        "date"
+        "date",
+        "object"
       ],
-      "description": "Field type: string, number, boolean, array, or date"
+      "description": "Field type: string, number, boolean, array, date, or object"
     },
     "FrontmatterConfig": {
       "properties": {
@@ -76,7 +77,7 @@
       "properties": {
         "name": {
           "type": "string",
-          "description": "Field name"
+          "description": "Field name (dot-notation for nested keys, e.g. 'metadata.author')"
         },
         "optional": {
           "type": "boolean",
@@ -89,6 +90,11 @@
         "format": {
           "$ref": "#/$defs/FieldFormat",
           "description": "Date, email, or url"
+        },
+        "enum": {
+          "items": true,
+          "type": "array",
+          "description": "Allowed values (for arrays, applies to each element)"
         }
       },
       "additionalProperties": false,
@@ -201,6 +207,20 @@
         "min_items": {
           "type": "integer",
           "description": "Minimum items per list"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "ParagraphRule": {
+      "properties": {
+        "min": {
+          "type": "integer",
+          "description": "Minimum paragraphs"
+        },
+        "max": {
+          "type": "integer",
+          "description": "Maximum paragraphs"
         }
       },
       "additionalProperties": false,
@@ -377,6 +397,10 @@
             "word_count": {
               "$ref": "#/$defs/WordCountRule",
               "description": "Word count constraints"
+            },
+            "paragraphs": {
+              "$ref": "#/$defs/ParagraphRule",
+              "description": "Paragraph count constraints"
             }
           },
           "additionalProperties": false,

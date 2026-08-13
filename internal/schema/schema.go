@@ -2,7 +2,7 @@ package schema
 
 import (
 	"github.com/invopop/jsonschema"
-	orderedmap "github.com/wk8/go-ordered-map/v2"
+	orderedmap "github.com/pb33f/ordered-map/v2"
 	"gopkg.in/yaml.v3"
 )
 
@@ -173,6 +173,7 @@ func (StructureElement) JSONSchema() *jsonschema.Schema {
 		Items:       &jsonschema.Schema{Ref: "#/$defs/ListRule"},
 	})
 	props.Set("word_count", &jsonschema.Schema{Ref: "#/$defs/WordCountRule", Description: "Word count constraints"})
+	props.Set("paragraphs", &jsonschema.Schema{Ref: "#/$defs/ParagraphRule", Description: "Paragraph count constraints"})
 
 	return &jsonschema.Schema{
 		OneOf: []*jsonschema.Schema{
@@ -276,6 +277,9 @@ type SectionRules struct {
 
 	// Word count requirements for the section
 	WordCount *WordCountRule `yaml:"word_count,omitempty" json:"word_count,omitempty" lc:"word count constraints"`
+
+	// Paragraph count requirements for the section
+	Paragraphs *ParagraphRule `yaml:"paragraphs,omitempty" json:"paragraphs,omitempty" lc:"paragraph count constraints"`
 }
 
 // RequiredTextPattern defines a required text pattern with optional regex support
@@ -423,6 +427,12 @@ type WordCountRule struct {
 	Max int `yaml:"max,omitempty" json:"max,omitempty" lc:"maximum words"`
 }
 
+// ParagraphRule defines paragraph-count requirements for a section
+type ParagraphRule struct {
+	Min int `yaml:"min,omitempty" json:"min,omitempty" lc:"minimum paragraphs"`
+	Max int `yaml:"max,omitempty" json:"max,omitempty" lc:"maximum paragraphs"`
+}
+
 // CountConstraint defines how many times a structure element can match
 type CountConstraint struct {
 	Min int `yaml:"min,omitempty" json:"min,omitempty" lc:"minimum occurrences required"`
@@ -463,14 +473,15 @@ const (
 	FieldTypeBoolean FieldType = "boolean"
 	FieldTypeArray   FieldType = "array"
 	FieldTypeDate    FieldType = "date"
+	FieldTypeObject  FieldType = "object"
 )
 
 // JSONSchema implements jsonschema.JSONSchemer to add enum constraint
 func (FieldType) JSONSchema() *jsonschema.Schema {
 	return &jsonschema.Schema{
 		Type:        "string",
-		Enum:        []any{"string", "number", "boolean", "array", "date"},
-		Description: "Field type: string, number, boolean, array, or date",
+		Enum:        []any{"string", "number", "boolean", "array", "date", "object"},
+		Description: "Field type: string, number, boolean, array, date, or object",
 	}
 }
 
@@ -495,8 +506,10 @@ func (FieldFormat) JSONSchema() *jsonschema.Schema {
 
 // FrontmatterField defines a single frontmatter field requirement
 type FrontmatterField struct {
-	// Name is the field name (required)
-	Name string `yaml:"name" json:"name" lc:"field name"`
+	// Name is the field name (required). Supports dot-notation for nested
+	// frontmatter keys, e.g., "metadata.author". Path segments containing a
+	// literal dot can be escaped with a backslash, e.g., "weird\\.key".
+	Name string `yaml:"name" json:"name" lc:"field name (dot-notation for nested keys, e.g. 'metadata.author')"`
 
 	// Optional indicates whether this field is not required (default: false = required)
 	Optional bool `yaml:"optional,omitempty" json:"optional,omitempty" lc:"field is not required"`
@@ -506,4 +519,8 @@ type FrontmatterField struct {
 
 	// Format specifies format validation (use FieldFormat* constants)
 	Format FieldFormat `yaml:"format,omitempty" json:"format,omitempty" lc:"date, email, or url"`
+
+	// Enum restricts the field value to one of the listed values. For array
+	// fields, every element must be one of the listed values.
+	Enum []any `yaml:"enum,omitempty" json:"enum,omitempty" lc:"allowed values (for arrays, applies to each element)"`
 }
